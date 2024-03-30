@@ -72,10 +72,7 @@ public class HomeFragment extends Fragment {
         CustomAdapter adapter = new CustomAdapter(getActivity(), itemNames, imgIds);
         listView.setAdapter(adapter);
 
-        listView.setOnItemClickListener((parent, view, position, id) -> {
-
-            getLocation();
-        });
+        listView.setOnItemClickListener((parent, view, position, id) -> getLocation());
     }
 
     @Override
