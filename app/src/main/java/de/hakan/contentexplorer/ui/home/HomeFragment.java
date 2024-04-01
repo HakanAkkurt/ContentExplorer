@@ -7,6 +7,8 @@ import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationManager;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -41,6 +43,7 @@ public class HomeFragment extends Fragment {
     private static final int PERMISSION_REQUEST_CODE = 1001;
     private LocationManager locationManager;
 
+    private Handler handler;
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -52,6 +55,8 @@ public class HomeFragment extends Fragment {
 
             locationManager = (LocationManager) getActivity().getSystemService(Context.LOCATION_SERVICE);
             getCurrentLocation();
+
+            handler = new Handler(Looper.getMainLooper());
         }
 
         return root;
@@ -83,27 +88,10 @@ public class HomeFragment extends Fragment {
 
         if (currentLocation != null) {
 
-            Thread findNearbyPlacesNewAPICallThread = new Thread(() -> {
-
-                try {
-
-                    // Get 10 POIs
-                    ArrayList<String> poiArrayList = new ArrayList<>(
-                            findNearbyPlaces(currentLocation.getLatitude(),
+            // Get 10 POIs
+            findNearbyPlaces(currentLocation.getLatitude(),
                             currentLocation.getLongitude(),
-                            getString(R.string.google_maps_key)));
-
-                    if (!poiArrayList.isEmpty()) {
-                        for (String poiItem : poiArrayList) {
-                            System.out.println(poiItem);
-                        }
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            });
-
-            findNearbyPlacesNewAPICallThread.start();
+                            getString(R.string.google_maps_key));
 
             itemNames.clear();
             imgIds.clear();
@@ -134,45 +122,53 @@ public class HomeFragment extends Fragment {
         }
     }
 
-    public ArrayList<String> findNearbyPlaces(double latitude, double longitude, String apiKey) {
+    public void findNearbyPlaces(double latitude, double longitude, String apiKey) {
 
-        ArrayList<String> poiItems = new ArrayList<>();
-        try {
+        new Thread(() -> {
+            try {
+                URL url = new URL("https://places.googleapis.com/v1/places:searchNearby");
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("POST");
+                conn.setRequestProperty("Content-Type", "application/json");
+                conn.setRequestProperty("X-Goog-Api-Key", apiKey);
+                conn.setRequestProperty("X-Goog-FieldMask", "places.displayName,places.formattedAddress,places.types");
 
-            URL url = new URL("https://places.googleapis.com/v1/places:searchNearby");
+                @SuppressLint("DefaultLocale") String requestBody = String.format("{\"maxResultCount\": 10," +
+                                " \"includedTypes\": ['restaurant']," +
+                                " \"locationRestriction\": {\"circle\": {\"center\": {\"latitude\": %f, \"longitude\": %f}," +
+                                " \"radius\": 500.0}}}",
+                        latitude, longitude);
 
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                conn.setDoOutput(true);
+                conn.getOutputStream().write(requestBody.getBytes());
 
-            conn.setRequestMethod("POST");
-            conn.setRequestProperty("Content-Type", "application/json");
-            conn.setRequestProperty("X-Goog-Api-Key", apiKey);
-            conn.setRequestProperty("X-Goog-FieldMask", "places.displayName,places.formattedAddress,places.types");
+                Scanner scanner = new Scanner(conn.getInputStream());
+                StringBuilder response = new StringBuilder();
+                while (scanner.hasNextLine()) {
+                    response.append(scanner.nextLine());
+                }
+                scanner.close();
+                conn.disconnect();
 
-            @SuppressLint("DefaultLocale")
-            String requestBody = String.format("{\"maxResultCount\": 10," +
-                            " \"includedTypes\": ['restaurant']," +
-                            " \"locationRestriction\": {\"circle\": {\"center\": {\"latitude\": %f, \"longitude\": %f}," +
-                            " \"radius\": 500.0}}}",
-                    latitude, longitude);
+                ArrayList<String> poiArrayList = new ArrayList<>(parseJSON(response.toString()));
 
-            conn.setDoOutput(true);
-            conn.getOutputStream().write(requestBody.getBytes());
+                handler.post(() -> updateListView(poiArrayList));
 
-            Scanner scanner = new Scanner(conn.getInputStream());
-            StringBuilder response = new StringBuilder();
-            while (scanner.hasNextLine()) {
-                response.append(scanner.nextLine());
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-            scanner.close();
-            conn.disconnect();
+        }).start();
+    }
 
-            poiItems.addAll(parseJSON(response.toString()));
+    private void updateListView(ArrayList<String> poiArrayList) {
 
-        } catch (IOException e) {
-            e.printStackTrace();
+        for (String item : poiArrayList) {
+
+            itemNames.add(item);
+            imgIds.add(R.drawable.ic_menu_gallery);
         }
 
-        return poiItems;
+        initAdapter();
     }
 
     private ArrayList<String> parseJSON(String response) {
