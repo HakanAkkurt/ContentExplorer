@@ -20,15 +20,23 @@ import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.Fragment;
 
 
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.lang.reflect.Type;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
 
 import de.hakan.contentexplorer.R;
@@ -88,17 +96,25 @@ public class HomeFragment extends Fragment {
 
         if (currentLocation != null) {
 
-            // Get 10 POIs
+            // Get 10 POIs and add to ListView
             findNearbyPlaces(currentLocation.getLatitude(),
                             currentLocation.getLongitude(),
                             getString(R.string.google_maps_key));
 
-            itemNames.clear();
-            imgIds.clear();
-            itemNames.add("Latitude: " + currentLocation.getLatitude() + "\nLongitude: " + currentLocation.getLongitude());
-            imgIds.add(R.drawable.ic_menu_gallery);
 
-            initAdapter();
+            // Request to OpenAI
+            StringBuilder userProfileText = new StringBuilder();
+            userProfileText.append("You are my personal assistant. I only like meat. I don't drink alcohol. No Cocktails. I eat fast food every Monday.\n");
+            userProfileText.append("Respond recommendations only in format name: ..., address: ...\n");
+
+            userProfileText.append("There's near me ");
+            userProfileText.append("Vegan Restaurant 'MyVegan',");
+            userProfileText.append("Halal turkish restaurant 'MyBigSteak',");
+            userProfileText.append("Cocktail Bar 'MyCocktail',");
+            userProfileText.append("Tea House 'DrinkCay'");
+
+            sendRequestToOpenAI(userProfileText.toString(), "Where to eat near me?");
+
         }
     }
 
@@ -170,6 +186,85 @@ public class HomeFragment extends Fragment {
 
         initAdapter();
     }
+
+    private void sendRequestToOpenAI(String userProfileText, String message) {
+        new Thread(() -> {
+            try {
+                String apiKey = getString(R.string.open_ai_key);
+                String url = "https://api.openai.com/v1/chat/completions";
+                String model = "gpt-3.5-turbo";
+
+                JSONObject requestBody = new JSONObject();
+                requestBody.put("model", model);
+
+                JSONArray messagesArray = new JSONArray();
+
+                JSONObject systemMessage = new JSONObject();
+                systemMessage.put("role", "system");
+                systemMessage.put("content", userProfileText);
+
+                JSONObject userMessage = new JSONObject();
+                userMessage.put("role", "user");
+                userMessage.put("content", message);
+
+                messagesArray.put(systemMessage);
+                messagesArray.put(userMessage);
+
+                requestBody.put("messages", messagesArray);
+                System.out.println(requestBody);
+
+                // Send Request
+                URL obj = new URL(url);
+                HttpURLConnection connection = (HttpURLConnection) obj.openConnection();
+                connection.setRequestMethod("POST");
+                connection.setRequestProperty("Authorization", "Bearer " + apiKey);
+                connection.setRequestProperty("Content-Type", "application/json");
+                connection.setDoOutput(true);
+
+                OutputStreamWriter writer = new OutputStreamWriter(connection.getOutputStream());
+                writer.write(requestBody.toString());
+                writer.flush();
+                writer.close();
+
+                // Response
+                BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+                StringBuilder response = new StringBuilder();
+                String inputLine;
+                while ((inputLine = in.readLine()) != null) {
+                    response.append(inputLine);
+                }
+                in.close();
+
+                String responseBody = response.toString();
+
+                Gson gson = new Gson();
+                Type type = new TypeToken<Map<String, Object>>() {}.getType();
+                Map<String, Object> jsonMap = gson.fromJson(responseBody, type);
+
+                List<Map<String, Object>> choices = (List<Map<String, Object>>) jsonMap.get("choices");
+
+                if (choices != null && !choices.isEmpty()) {
+
+                    for (Map<String, Object> choice : choices) {
+
+                        Map<String, Object> message1 = (Map<String, Object>) choice.get("message");
+
+                        if (message1 != null) {
+                            String content = (String) message1.get("content");
+                            if (content != null) {
+                                System.out.println("Chatbot: " + content);
+                            }
+
+                        }
+                    }
+                }
+
+            } catch (IOException | JSONException e) {
+                e.printStackTrace();
+            }
+        }).start();
+    }
+
 
     private ArrayList<String> parseJSON(String response) {
 
