@@ -44,8 +44,9 @@ import de.hakan.contentexplorer.R;
 public class HomeFragment extends Fragment {
 
     private ListView listView;
-    private final List<String> itemNames = new ArrayList<>();
-    private final List<Integer> imgIds = new ArrayList<>();
+    private final ArrayList<String> itemNames = new ArrayList<>();
+    private final ArrayList<Integer> imgIds = new ArrayList<>();
+    private ArrayList<String> poiArrayList = new ArrayList<>();
     private Location currentLocation;
 
     private static final int PERMISSION_REQUEST_CODE = 1001;
@@ -101,20 +102,6 @@ public class HomeFragment extends Fragment {
                             currentLocation.getLongitude(),
                             getString(R.string.google_maps_key));
 
-
-            // Request to OpenAI
-            StringBuilder userProfileText = new StringBuilder();
-            userProfileText.append("You are my personal assistant. I only like meat. I don't drink alcohol. No Cocktails. I eat fast food every Monday.\n");
-            userProfileText.append("Respond recommendations only in format name: ..., address: ...\n");
-
-            userProfileText.append("There's near me ");
-            userProfileText.append("Vegan Restaurant 'MyVegan',");
-            userProfileText.append("Halal turkish restaurant 'MyBigSteak',");
-            userProfileText.append("Cocktail Bar 'MyCocktail',");
-            userProfileText.append("Tea House 'DrinkCay'");
-
-            sendRequestToOpenAI(userProfileText.toString(), "Where to eat near me?");
-
         }
     }
 
@@ -166,9 +153,27 @@ public class HomeFragment extends Fragment {
                 scanner.close();
                 conn.disconnect();
 
-                ArrayList<String> poiArrayList = new ArrayList<>(parseJSON(response.toString()));
+                poiArrayList = new ArrayList<>(parseJSON(response.toString()));
 
                 handler.post(() -> updateListView(poiArrayList));
+
+                // Request to OpenAI
+                String userProfileText = "You are my personal assistant. I only like meat. No vegan. " +
+                        "I don't drink alcohol. No Cocktails. I eat fast food every Monday.\n" +
+                        "Respond recommendations only in format name: ..., address: ... (line break)" +
+                        " with max 3 recommendations. ";
+
+                StringBuilder poisNearMeText = new StringBuilder();
+                poisNearMeText.append("There's near me: ");
+
+                if (!poiArrayList.isEmpty()) {
+
+                    for (String poiItem : poiArrayList) {
+                        poisNearMeText.append(poiItem).append(", ");
+                    }
+                }
+
+                sendRequestToOpenAI(userProfileText, poisNearMeText.toString(), "Where to eat near me?");
 
             } catch (IOException e) {
                 e.printStackTrace();
@@ -187,7 +192,8 @@ public class HomeFragment extends Fragment {
         initAdapter();
     }
 
-    private void sendRequestToOpenAI(String userProfileText, String message) {
+    private void sendRequestToOpenAI(String userProfileText, String poiListText, String message) {
+
         new Thread(() -> {
             try {
                 String apiKey = getString(R.string.open_ai_key);
@@ -201,7 +207,7 @@ public class HomeFragment extends Fragment {
 
                 JSONObject systemMessage = new JSONObject();
                 systemMessage.put("role", "system");
-                systemMessage.put("content", userProfileText);
+                systemMessage.put("content", userProfileText + poiListText);
 
                 JSONObject userMessage = new JSONObject();
                 userMessage.put("role", "user");
@@ -243,6 +249,7 @@ public class HomeFragment extends Fragment {
 
                 List<Map<String, Object>> choices = (List<Map<String, Object>>) jsonMap.get("choices");
 
+                String content = null;
                 if (choices != null && !choices.isEmpty()) {
 
                     for (Map<String, Object> choice : choices) {
@@ -250,13 +257,21 @@ public class HomeFragment extends Fragment {
                         Map<String, Object> message1 = (Map<String, Object>) choice.get("message");
 
                         if (message1 != null) {
-                            String content = (String) message1.get("content");
+                            content = (String) message1.get("content");
                             if (content != null) {
                                 System.out.println("Chatbot: " + content);
                             }
 
                         }
                     }
+                }
+
+                if (content != null) {
+
+                    ArrayList<String> poiArrayListTemp = new ArrayList<>();
+                    poiArrayListTemp.add("Recommendations: \n" + content);
+
+                    handler.post(() -> updateListView(poiArrayListTemp));
                 }
 
             } catch (IOException | JSONException e) {
@@ -284,7 +299,8 @@ public class HomeFragment extends Fragment {
                 String formattedAddress = placeObject.getString("formattedAddress");
                 String types = placeObject.getString("types");
 
-                poiItems.add(displayName + "\n" + formattedAddress + "\n" + types);
+                // Format output from Google Places API (New)
+                poiItems.add("POI Name: " + displayName + "\n" + "Address: " + formattedAddress + "\n" + "POI Type: " + types);
 
             }
         } catch (JSONException e) {
