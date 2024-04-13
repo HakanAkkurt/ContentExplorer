@@ -2,10 +2,13 @@ package de.hakan.contentexplorer.ui.home;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationManager;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -56,6 +59,7 @@ public class HomeFragment extends Fragment {
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+
         View root = inflater.inflate(R.layout.fragment_home, container, false);
 
         listView = root.findViewById(R.id.list_view);
@@ -63,6 +67,9 @@ public class HomeFragment extends Fragment {
         if (getActivity() != null) {
 
             locationManager = (LocationManager) getActivity().getSystemService(Context.LOCATION_SERVICE);
+
+            Toast.makeText(getContext(), "Please wait..", Toast.LENGTH_LONG).show();
+
             getCurrentLocation();
 
             handler = new Handler(Looper.getMainLooper());
@@ -85,8 +92,8 @@ public class HomeFragment extends Fragment {
         }
 
         locationManager.requestSingleUpdate(LocationManager.GPS_PROVIDER, location -> {
-            currentLocation = location;
 
+            currentLocation = location;
             updateLocationInfo();
 
         }, null);
@@ -106,6 +113,7 @@ public class HomeFragment extends Fragment {
     }
 
     private void initAdapter() {
+
         CustomAdapter adapter = new CustomAdapter(getActivity(), itemNames, imgIds);
         listView.setAdapter(adapter);
 
@@ -114,6 +122,7 @@ public class HomeFragment extends Fragment {
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode == PERMISSION_REQUEST_CODE) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
@@ -186,6 +195,21 @@ public class HomeFragment extends Fragment {
         for (String item : poiArrayList) {
 
             itemNames.add(item);
+            imgIds.add(R.drawable.ic_menu_gallery);
+        }
+
+        initAdapter();
+    }
+
+    private void updateListViewChatGPTAnswer(ArrayList<String> poiArrayList) {
+
+        for (String item : poiArrayList) {
+
+            itemNames.add(item);
+            showPopup(getContext(), item);
+
+            // To open Google Maps with an address
+            // openMaps(getContext(), "123 Main Street, City, Country");
             imgIds.add(R.drawable.ic_menu_gallery);
         }
 
@@ -269,9 +293,10 @@ public class HomeFragment extends Fragment {
                 if (content != null) {
 
                     ArrayList<String> poiArrayListTemp = new ArrayList<>();
-                    poiArrayListTemp.add("Recommendations: \n" + content);
+                    poiArrayListTemp.add("Recommendations: \n\n" + content);
 
-                    handler.post(() -> updateListView(poiArrayListTemp));
+                    // Send the answer from ChatGPT API to ListView
+                    handler.post(() -> updateListViewChatGPTAnswer(poiArrayListTemp));
                 }
 
             } catch (IOException | JSONException e) {
@@ -279,7 +304,6 @@ public class HomeFragment extends Fragment {
             }
         }).start();
     }
-
 
     private ArrayList<String> parseJSON(String response) {
 
@@ -309,6 +333,37 @@ public class HomeFragment extends Fragment {
         return poiItems;
     }
 
+    public static void showPopup(Context context, String message) {
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(context);
+        builder.setMessage(message)
+                .setCancelable(true)
+                .setPositiveButton("OK", (dialog, id) -> dialog.dismiss());
+        AlertDialog alert = builder.create();
+
+        alert.show();
+    }
+
+    public static void openMaps(Context context, String address) {
+
+        // Erstellen der URI für die Google Maps mit der Adresse
+        Uri gmmIntentUri = Uri.parse("geo:0,0?q=" + Uri.encode(address));
+
+        // Erstellen des Intents für die Google Maps mit der URI
+        Intent mapIntent = new Intent(Intent.ACTION_VIEW, gmmIntentUri);
+        mapIntent.setPackage("com.google.android.apps.maps");
+
+        // Überprüfen, ob die Google Maps App auf dem Gerät installiert ist
+        if (mapIntent.resolveActivity(context.getPackageManager()) != null) {
+            // Öffnen der Google Maps App
+            context.startActivity(mapIntent);
+        } else {
+            // Öffnen der Google Maps Webseite im Browser als Fallback
+            Uri webpage = Uri.parse("https://www.google.com/maps/search/?api=1&query=" + Uri.encode(address));
+            Intent webIntent = new Intent(Intent.ACTION_VIEW, webpage);
+            context.startActivity(webIntent);
+        }
+    }
 
     @Override
     public void onDestroyView() {
