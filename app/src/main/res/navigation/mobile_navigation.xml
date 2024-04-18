@@ -7,9 +7,9 @@
 
     <fragment
         android:id="@+id/nav_home"
-        android:name="de.hakan.contentexplorer.ui.home.HomeFragment"
+        android:name="de.hakan.contentexplorer.ui.aroundMe.AroundMeFragment"
         android:label="@string/menu_home"
-        tools:layout="@layout/fragment_home" />
+        tools:layout="@layout/fragment_around_me" />
 
     <fragment
         android:id="@+id/nav_gallery"

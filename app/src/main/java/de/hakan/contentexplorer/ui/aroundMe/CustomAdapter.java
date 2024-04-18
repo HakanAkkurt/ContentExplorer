@@ -1,4 +1,4 @@
-package de.hakan.contentexplorer.ui.home;
+package de.hakan.contentexplorer.ui.aroundMe;
 
 import android.content.Context;
 import android.view.LayoutInflater;

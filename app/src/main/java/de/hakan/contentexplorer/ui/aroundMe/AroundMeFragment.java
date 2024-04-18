@@ -1,4 +1,4 @@
-package de.hakan.contentexplorer.ui.home;
+package de.hakan.contentexplorer.ui.aroundMe;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
@@ -44,7 +44,7 @@ import java.util.Scanner;
 
 import de.hakan.contentexplorer.R;
 
-public class HomeFragment extends Fragment {
+public class AroundMeFragment extends Fragment {
 
     private ListView listView;
     private final ArrayList<String> itemNames = new ArrayList<>();
@@ -60,7 +60,7 @@ public class HomeFragment extends Fragment {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 
-        View root = inflater.inflate(R.layout.fragment_home, container, false);
+        View root = inflater.inflate(R.layout.fragment_around_me, container, false);
 
         listView = root.findViewById(R.id.list_view);
 
@@ -192,6 +192,9 @@ public class HomeFragment extends Fragment {
 
     private void updateListView(ArrayList<String> poiArrayList) {
 
+        itemNames.clear();
+        imgIds.clear();
+
         for (String item : poiArrayList) {
 
             itemNames.add(item);
@@ -201,19 +204,19 @@ public class HomeFragment extends Fragment {
         initAdapter();
     }
 
-    private void updateListViewChatGPTAnswer(ArrayList<String> poiArrayList) {
+    private void GetChatGPTAnswerForUI(ArrayList<String> poiArrayList) {
 
         for (String item : poiArrayList) {
 
-            itemNames.add(item);
+            //itemNames.add(item);
             showPopup(getContext(), item);
 
             // To open Google Maps with an address
             // openMaps(getContext(), "123 Main Street, City, Country");
-            imgIds.add(R.drawable.ic_menu_gallery);
+            //imgIds.add(R.drawable.ic_menu_gallery);
         }
 
-        initAdapter();
+        //initAdapter();
     }
 
     private void sendRequestToOpenAI(String userProfileText, String poiListText, String message) {
@@ -296,7 +299,7 @@ public class HomeFragment extends Fragment {
                     poiArrayListTemp.add("Recommendations: \n\n" + content);
 
                     // Send the answer from ChatGPT API to ListView
-                    handler.post(() -> updateListViewChatGPTAnswer(poiArrayListTemp));
+                    handler.post(() -> GetChatGPTAnswerForUI(poiArrayListTemp));
                 }
 
             } catch (IOException | JSONException e) {

@@ -1,4 +1,4 @@
-package de.hakan.contentexplorer.ui.home;
+package de.hakan.contentexplorer.ui.aroundMe;
 
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;

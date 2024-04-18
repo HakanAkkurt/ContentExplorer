@@ -28,7 +28,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(binding.getRoot());
 
         setSupportActionBar(binding.appBarMain.toolbar);
-        binding.appBarMain.fab.setOnClickListener(view -> Snackbar.make(view, "My Action", Snackbar.LENGTH_LONG)
+        binding.appBarMain.fab.setOnClickListener(view -> Snackbar.make(view, "Send Feedback", Snackbar.LENGTH_LONG)
                 .setAction("Action", null).show());
 
         DrawerLayout drawer = binding.drawerLayout;
