@@ -95,6 +95,7 @@ public class AroundMeFragment extends Fragment {
 
             currentLocation = location;
             updateLocationInfo();
+            Toast.makeText(getContext(), "Refreshing your POIs...", Toast.LENGTH_LONG).show();
 
         }, null);
 
@@ -167,7 +168,8 @@ public class AroundMeFragment extends Fragment {
                 handler.post(() -> updateListView(poiArrayList));
 
                 // Request to OpenAI
-                String userProfileText = "You are my personal assistant. I only like meat. No vegan. " +
+                String userProfileText = "You are my personal assistant. " +
+                        "I only like meat. No vegan. " +
                         "I don't drink alcohol. No Cocktails. I eat fast food every Monday.\n" +
                         "Respond recommendations only in format name: ..., address: ... (line break)" +
                         " with max 3 recommendations. ";
