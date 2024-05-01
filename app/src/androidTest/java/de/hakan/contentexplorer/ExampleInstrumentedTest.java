@@ -21,6 +21,6 @@ public class ExampleInstrumentedTest {
     public void useAppContext() {
         // Context of the app under test.
         Context appContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
-        assertEquals("de.hakan.contentexplorer", appContext.getPackageName());
+        assertEquals("de.hakan.contentexplorer1", appContext.getPackageName());
     }
 }

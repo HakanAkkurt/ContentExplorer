@@ -1,5 +1,13 @@
 package de.hakan.contentexplorer.ui.aroundMe;
 
+import android.os.Bundle;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+
+import androidx.annotation.NonNull;
+import androidx.fragment.app.Fragment;
+
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
@@ -9,18 +17,12 @@ import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationManager;
 import android.net.Uri;
-import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
 import android.widget.ListView;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
-import androidx.fragment.app.Fragment;
 
 
 import com.google.gson.Gson;
@@ -107,8 +109,8 @@ public class AroundMeFragment extends Fragment {
 
             // Get 10 POIs and add to ListView
             findNearbyPlaces(currentLocation.getLatitude(),
-                            currentLocation.getLongitude(),
-                            getString(R.string.google_maps_key));
+                    currentLocation.getLongitude(),
+                    getString(R.string.google_maps_key));
 
         }
     }
@@ -200,7 +202,7 @@ public class AroundMeFragment extends Fragment {
         for (String item : poiArrayList) {
 
             itemNames.add(item);
-            imgIds.add(R.drawable.ic_menu_gallery);
+            imgIds.add(R.drawable.ic_dashboard_black_24dp);
         }
 
         initAdapter();
