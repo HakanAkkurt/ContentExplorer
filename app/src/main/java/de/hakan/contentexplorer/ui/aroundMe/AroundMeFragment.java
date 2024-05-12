@@ -1,6 +1,7 @@
 package de.hakan.contentexplorer.ui.aroundMe;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -42,9 +43,11 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Scanner;
 
 import de.hakan.contentexplorer.R;
+import de.hakan.contentexplorer.backend.LocationDatabaseHelper;
 
 public class AroundMeFragment extends Fragment {
 
@@ -71,6 +74,14 @@ public class AroundMeFragment extends Fragment {
             locationManager = (LocationManager) getActivity().getSystemService(Context.LOCATION_SERVICE);
 
             Toast.makeText(getContext(), "Please wait..", Toast.LENGTH_LONG).show();
+
+            // Show all Location Info from DB
+            LocationDatabaseHelper dbHelper = new LocationDatabaseHelper(getContext());
+
+            for (String locationData : dbHelper.getAllLocationDataFromDB()) {
+
+                Log.d("Database", "Row data: " + locationData);
+            }
 
             getCurrentLocation();
 
@@ -106,6 +117,9 @@ public class AroundMeFragment extends Fragment {
     private void updateLocationInfo() {
 
         if (currentLocation != null) {
+
+            LocationDatabaseHelper dbHelper = new LocationDatabaseHelper(getContext());
+            dbHelper.addLocation(currentLocation.getLatitude(), currentLocation.getLongitude());
 
             // Get 10 POIs and add to ListView
             findNearbyPlaces(currentLocation.getLatitude(),
@@ -189,7 +203,8 @@ public class AroundMeFragment extends Fragment {
                 sendRequestToOpenAI(userProfileText, poisNearMeText.toString(), "Where to eat near me?");
 
             } catch (IOException e) {
-                e.printStackTrace();
+
+                Log.d("IOException", Objects.requireNonNull(e.getMessage()));
             }
         }).start();
     }
@@ -307,7 +322,7 @@ public class AroundMeFragment extends Fragment {
                 }
 
             } catch (IOException | JSONException e) {
-                e.printStackTrace();
+                Log.d("IOException or JSONException", Objects.requireNonNull(e.getMessage()));
             }
         }).start();
     }
@@ -335,7 +350,8 @@ public class AroundMeFragment extends Fragment {
 
             }
         } catch (JSONException e) {
-            e.printStackTrace();
+
+            Log.d("JSONException", Objects.requireNonNull(e.getMessage()));
         }
         return poiItems;
     }
