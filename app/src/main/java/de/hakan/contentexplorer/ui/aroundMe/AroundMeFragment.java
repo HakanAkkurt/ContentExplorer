@@ -78,6 +78,10 @@ public class AroundMeFragment extends Fragment {
             // Show all Location Info from DB
             LocationDatabaseHelper dbHelper = new LocationDatabaseHelper(getContext());
 
+            // DB Clean up
+//            dbHelper.deleteAllEntries();
+//            Log.d("Database", "All entries deleted");
+
             for (String locationData : dbHelper.getAllLocationDataFromDB()) {
 
                 Log.d("Database", "Row data: " + locationData);
@@ -184,23 +188,25 @@ public class AroundMeFragment extends Fragment {
                 handler.post(() -> updateListView(poiArrayList));
 
                 // Request to OpenAI
-                String userProfileText = "You are my personal assistant. " +
-                        "I only like meat. No vegan. " +
-                        "I don't drink alcohol. No Cocktails. I eat fast food every Monday.\n" +
-                        "Respond recommendations only in format name: ..., address: ... (line break)" +
-                        " with max 3 recommendations. ";
+                String userProfileText = "You are my personal assistant. You must always consider my preferences when making recommendations. " +
+                        "I like mediterranean food. I like japanese food. I do not like fast food. I do not like american food. I do not like vegan or vegetarian food. " +
+                        "I don't drink alcohol. No Cocktails. " +
+                        "Respond with 3 recommendations only from the POI List near me and " +
+                        "in the format: Name: ..., \n Address: ... \n ";
 
                 StringBuilder poisNearMeText = new StringBuilder();
-                poisNearMeText.append("There's near me: ");
+                poisNearMeText.append("POI list near me: ");
 
                 if (!poiArrayList.isEmpty()) {
 
                     for (String poiItem : poiArrayList) {
+
+                        poiItem = poiItem.replaceAll("\"", "");
                         poisNearMeText.append(poiItem).append(", ");
                     }
                 }
 
-                sendRequestToOpenAI(userProfileText, poisNearMeText.toString(), "Where to eat near me?");
+                sendRequestToOpenAI(userProfileText, poisNearMeText.toString(), "Where should I eat?");
 
             } catch (IOException e) {
 

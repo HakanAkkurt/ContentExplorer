@@ -81,6 +81,12 @@ public class LocationDatabaseHelper extends SQLiteOpenHelper {
         return locationDataList;
     }
 
+    public void deleteAllEntries() {
+        SQLiteDatabase db = this.getWritableDatabase();
+        db.execSQL("DELETE FROM " + TABLE_NAME);
+        db.close();
+    }
+
     private String getTimestamp() {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
         return sdf.format(new Date());
